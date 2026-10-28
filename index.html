@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#0e1726">
+<meta name="format-detection" content="telephone=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Media Partners">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>MEDIA PARTNERS</title>
+<!--
+  MEDIA PARTNERS — media partnership dashboard
+  ---------------------------------------------
+  One self-contained file: no libraries, no server, no API keys.
+  Data comes from a Google Sheet published to the web as CSV.
+
+  TO CONNECT YOUR SHEET: scroll to the <script> near the bottom and paste
+  your published CSV link into CSV_URL (section 1, clearly marked).
+  Column names and other options are in sections 1–2 of the same script.
+-->
+<style>
+  /* ---------- Theme tokens (light, then dark) ---------- */
+  :root {
+    color-scheme: light;
+    --page: #f3f4f6;
+    --surface: #ffffff;
+    --surface-2: #f6f7f9;
+    --ink: #0e1726;
+    --ink-2: #455063;
+    --muted: #667085;
+    --line: #e2e5ea;
+    --line-strong: #cdd3dc;
+    --accent: #2a78d6;
+    --bar: #2a78d6;
+    --track: #eef1f5;
+    --mast-bg: #0e1726;
+    --mast-ink: #ffffff;
+    --mast-ink-2: #b3bdcc;
+    --good: #0ca30c;
+    --warn: #fab219;
+    --crit: #d03b3b;
+    --info-bg: #eef5fd; --info-line: #c4dcf6; --info-ink: #1c4f8f;
+    --warn-bg: #fff8e8; --warn-line: #f0d08e; --warn-ink: #6f4300;
+    --crit-bg: #fdf0f0; --crit-line: #efc0c0; --crit-ink: #962222;
+    --radius: 16px;
+    --shadow: 0 1px 2px rgba(14, 23, 38, .04), 0 6px 20px rgba(14, 23, 38, .05);
+    --font: -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --page: #0c0e12;
+      --surface: #161a20;
+      --surface-2: #1d2129;
+      --ink: #eef1f5;
+      --ink-2: #bec6d1;
+      --muted: #8e97a5;
+      --line: #2a3039;
+      --line-strong: #3b434f;
+      --accent: #3987e5;
+      --bar: #3987e5;
+      --track: #222833;
+      --mast-bg: #06080b;
+      --mast-ink-2: #9ba6b6;
+      --info-bg: #132438; --info-line: #24446a; --info-ink: #b9d4f6;
+      --warn-bg: #2a2110; --warn-line: #5a4416; --warn-ink: #f4d491;
+      --crit-bg: #2c1416; --crit-line: #5c2528; --crit-ink: #f2b6b6;
+      --shadow: none;
+    }
+  }
+
+  /* ---------- Base ---------- */
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font: 16px/1.5 var(--font);
+    overflow-wrap: break-word;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, p { margin: 0; }
+  button, input, select { font: inherit; color: inherit; }
+  code { font: 0.9em/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 1px 5px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  .wrap {
+    width: 100%;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+  @media (min-width: 760px) { .wrap { padding-left: 28px; padding-right: 28px; } }
+
+  /* ---------- Masthead ---------- */
+  .masthead {
+    position: relative;
+    background: radial-gradient(120% 140% at 100% 0%, #1b2d4a 0%, var(--mast-bg) 60%);
+    color: var(--mast-ink);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 26px);
+    padding-bottom: 26px;
+  }
+  .masthead::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
+    background: linear-gradient(90deg, #2a78d6, #1baf7a);
+  }
+  .mast-inner { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 18px 28px; }
+  .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--mast-ink-2); margin-bottom: 8px; }
+  h1 { font-size: clamp(30px, 8vw, 54px); line-height: 1.02; font-weight: 800; letter-spacing: .08em; }
+  .mast-actions { display: flex; align-items: center; gap: 14px; }
+  .status { display: flex; align-items: flex-start; gap: 9px; font-size: 14px; line-height: 1.35; color: var(--mast-ink); }
+  .status-sub { display: block; font-size: 12.5px; color: var(--mast-ink-2); }
+  .dot { width: 9px; height: 9px; margin-top: 5px; border-radius: 50%; background: #8a93a1; flex: none; }
+  .status[data-mode="ok"] .dot { background: var(--good); }
+  .status[data-mode="warn"] .dot { background: var(--warn); }
+  .status[data-mode="error"] .dot { background: var(--crit); }
+  .status[data-mode="loading"] .dot { background: #5598e7; animation: pulse 1s ease-in-out infinite; }
+  @media (max-width: 599px) {
+    .mast-actions { width: 100%; justify-content: space-between; }
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 44px; padding: 0 16px;
+    border: 1px solid var(--line-strong); border-radius: 11px;
+    background: var(--surface); color: var(--ink);
+    font-size: 15px; font-weight: 600; white-space: nowrap;
+    cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  }
+  .btn:hover { background: var(--surface-2); }
+  .btn:focus-visible, .seg button:focus-visible, .th-btn:focus-visible, summary:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 3px solid var(--accent); outline-offset: 2px;
+  }
+  .btn[disabled] { cursor: progress; opacity: .75; }
+  .btn-refresh { background: #ffffff; color: #0e1726; border-color: transparent; flex: none; }
+  .btn-refresh:hover { background: #e9eef6; }
+  .btn-refresh .icon { width: 18px; height: 18px; }
+  .btn-refresh[aria-busy="true"] .icon { animation: spin .9s linear infinite; }
+  .btn-ghost { border-color: transparent; background: transparent; color: var(--accent); padding: 0 10px; }
+  .btn-ghost:hover { background: var(--surface-2); }
+  .icon { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+  /* ---------- Layout ---------- */
+  main { padding-top: 20px; padding-bottom: 8px; }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 22px;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 599px) { .panel { padding: 16px; border-radius: 14px; } }
+  .panel-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 20px; margin-bottom: 14px; }
+  .panel-head h2 { font-size: 19px; line-height: 1.25; font-weight: 700; letter-spacing: -.005em; }
+  .panel-sub { font-size: 14px; color: var(--muted); margin-top: 2px; }
+
+  /* ---------- Summary cards ---------- */
+  .kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .kpi {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow);
+    padding: 16px 18px; min-width: 0; display: flex; flex-direction: column; gap: 6px;
+  }
+  .kpi-label { font-size: 13.5px; font-weight: 600; color: var(--ink-2); line-height: 1.3; }
+  .kpi-value { font-size: clamp(24px, 6.4vw, 31px); font-weight: 700; line-height: 1.1; letter-spacing: -.01em; overflow-wrap: anywhere; }
+  .kpi-sub { font-size: 12.5px; color: var(--muted); line-height: 1.35; margin-top: auto; }
+  .kpi.is-missing .kpi-value { color: var(--muted); }
+  .kpi:first-child { border-top: 3px solid var(--accent); }
+  @media (max-width: 1023px) {
+    .kpis { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .kpi { grid-column: span 2; }
+    .kpi:nth-child(n+4) { grid-column: span 3; }
+  }
+  @media (max-width: 599px) {
+    .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .kpi, .kpi:nth-child(n+4) { grid-column: span 1; padding: 14px; }
+    .kpi:first-child { grid-column: 1 / -1; }
+  }
+
+  /* ---------- Notices ---------- */
+  .notice {
+    display: flex; gap: 12px; align-items: flex-start;
+    border: 1px solid; border-radius: 14px; padding: 14px 16px; margin-bottom: 16px; font-size: 14.5px;
+  }
+  .notice .icon { margin-top: 2px; }
+  .notice-body { flex: 1; min-width: 0; }
+  .notice-title { font-weight: 700; margin-bottom: 2px; }
+  .notice ul { margin: 4px 0 0; padding-left: 18px; }
+  .notice li + li { margin-top: 3px; }
+  .notice-info { background: var(--info-bg); border-color: var(--info-line); color: var(--info-ink); }
+  .notice-warn { background: var(--warn-bg); border-color: var(--warn-line); color: var(--warn-ink); flex-wrap: wrap; }
+  .notice-warn .notice-body { flex-basis: 260px; }
+  .notice-warn .btn { margin-left: auto; }
+
+  /* ---------- Full-panel states (setup / error / empty) ---------- */
+  .state-panel { text-align: center; padding: 40px 22px; }
+  .state-panel h2 { font-size: 20px; margin-bottom: 8px; }
+  .state-panel p { max-width: 560px; margin: 0 auto 10px; color: var(--ink-2); }
+  .state-panel .btn { margin-top: 10px; }
+  .state-icon {
+    width: 48px; height: 48px; margin: 0 auto 14px; border-radius: 50%;
+    display: grid; place-items: center; background: var(--crit-bg); color: var(--crit); border: 1px solid var(--crit-line);
+  }
+  .state-icon.neutral { background: var(--info-bg); color: var(--accent); border-color: var(--info-line); }
+  .hint { font-size: 14px; color: var(--muted) !important; }
+
+  .setup h2 { font-size: 21px; margin: 6px 0 8px; }
+  .setup h3 { font-size: 16px; margin: 22px 0 6px; }
+  .setup p { color: var(--ink-2); }
+  .badge { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; background: var(--info-bg); color: var(--info-ink); border: 1px solid var(--info-line); }
+  .badge-example { background: var(--warn-bg); color: var(--warn-ink); border-color: var(--warn-line); }
+  .steps { margin: 12px 0 0; padding-left: 22px; }
+  .steps li { margin: 8px 0; padding-left: 4px; }
+  .scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 10px; border: 1px dashed var(--line-strong); border-radius: 12px; }
+  table.example { border-collapse: collapse; width: 100%; font-size: 14px; white-space: nowrap; }
+  table.example caption { text-align: left; padding: 10px 12px 0; }
+  table.example th, table.example td { padding: 8px 12px; border-bottom: 1px solid var(--line); text-align: left; }
+  table.example td { color: var(--muted); font-style: italic; }
+  table.example tr:last-child td { border-bottom: 0; }
+  .privacy { margin-top: 18px; font-size: 14px; padding: 12px 14px; border-radius: 12px; background: var(--warn-bg); color: var(--warn-ink) !important; border: 1px solid var(--warn-line); }
+
+  /* ---------- Chart (pure HTML/CSS bars, no library) ---------- */
+  .seg { display: inline-grid; grid-auto-flow: column; gap: 4px; padding: 4px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 13px; }
+  .seg button {
+    min-height: 40px; padding: 0 14px; border: 0; border-radius: 9px; background: transparent;
+    font-size: 14px; font-weight: 600; color: var(--ink-2); cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  }
+  .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(14, 23, 38, .14); }
+  @media (max-width: 599px) {
+    .seg { display: grid; grid-auto-flow: row; grid-template-columns: 1fr 1fr; width: 100%; }
+  }
+  .bars { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 14px; }
+  .bar-row {
+    display: grid; align-items: center; gap: 6px 12px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "name val" "bar bar";
+  }
+  .bar-name { grid-area: name; font-size: 14.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-val { grid-area: val; font-size: 14px; color: var(--ink-2); font-variant-numeric: tabular-nums; text-align: right; }
+  .bar-track { grid-area: bar; display: block; height: 14px; background: var(--track); border-radius: 0 4px 4px 0; }
+  .bar-fill { display: block; height: 100%; background: var(--bar); border-radius: 0 4px 4px 0; }
+  @media (min-width: 760px) {
+    .bars { gap: 10px; }
+    .bar-row { grid-template-columns: minmax(0, 230px) minmax(0, 1fr) minmax(76px, auto); grid-template-areas: "name bar val"; }
+  }
+  .chart-more { margin-top: 12px; }
+  .fallback { padding: 26px 16px; text-align: center; color: var(--muted); background: var(--surface-2); border: 1px dashed var(--line-strong); border-radius: 12px; font-size: 14.5px; }
+
+  /* ---------- Toolbar (search + sort) ---------- */
+  .toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
+  .search { position: relative; flex: 1 1 280px; min-width: 0; }
+  .search .icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+  .search input {
+    width: 100%; min-height: 44px; padding: 0 14px 0 40px;
+    font-size: 16px; /* 16px stops iPhone from zooming in on focus */
+    border: 1px solid var(--line-strong); border-radius: 11px; background: var(--surface);
+    -webkit-appearance: none; appearance: none;
+  }
+  .sort { display: flex; align-items: center; gap: 8px; flex: 0 1 auto; min-width: 0; }
+  .sort-label { font-size: 14px; color: var(--muted); white-space: nowrap; }
+  .sort select {
+    min-height: 44px; min-width: 0; padding: 0 36px 0 12px;
+    font-size: 16px; border: 1px solid var(--line-strong); border-radius: 11px; background-color: var(--surface);
+    -webkit-appearance: none; appearance: none; cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%23667085' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 13px center;
+  }
+  @media (max-width: 599px) {
+    .sort { flex: 1 1 100%; }
+    .sort-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .sort select {
+      flex: 1; padding-left: 40px;
+      background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4'/%3E%3C/svg%3E"),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%23667085' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-position: left 12px center, right 13px center;
+    }
+  }
+
+  /* ---------- Outlet table (becomes a card list on phones) ---------- */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table.outlets { width: 100%; border-collapse: collapse; font-size: 15px; }
+  .outlets th, .outlets td { padding: 13px 14px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+  .outlets thead th { padding: 0; border-bottom: 1px solid var(--line-strong); }
+  .th-btn {
+    display: flex; align-items: center; gap: 6px; width: 100%; min-height: 46px; padding: 0 14px;
+    border: 0; background: transparent; cursor: pointer; text-align: left;
+    font-size: 12.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted);
+  }
+  .th-btn:hover, th[aria-sort="ascending"] .th-btn, th[aria-sort="descending"] .th-btn { color: var(--ink); }
+  .num .th-btn { justify-content: flex-end; text-align: right; }
+  .sort-ind { font-size: 10px; opacity: .55; }
+  th[aria-sort="ascending"] .sort-ind, th[aria-sort="descending"] .sort-ind { opacity: 1; color: var(--accent); }
+  .outlets .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .outlets tbody th { font-weight: 600; min-width: 180px; overflow-wrap: anywhere; }
+  .outlets tbody tr:hover { background: var(--surface-2); }
+  .outlets tfoot th, .outlets tfoot td { font-weight: 700; border-bottom: 0; border-top: 2px solid var(--line-strong); }
+  .pill { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; font-size: 11.5px; font-weight: 600; color: var(--ink-2); background: var(--surface-2); border: 1px solid var(--line); vertical-align: 1px; white-space: nowrap; }
+  .v-missing { color: var(--muted); }
+  .v-invalid { color: var(--warn-ink); text-decoration: underline dotted; text-underline-offset: 3px; }
+  .list-empty { padding: 28px 12px; text-align: center; color: var(--muted); }
+  .list-empty .btn { margin-top: 10px; }
+
+  @media (max-width: 759px) {
+    .table-wrap { overflow: visible; }
+    table.outlets, .outlets tbody, .outlets tfoot { display: block; }
+    .outlets thead { display: none; } /* phones sort with the "Sort by" menu above */
+    .outlets tr {
+      display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 16px;
+      padding: 15px 0; border-bottom: 1px solid var(--line);
+    }
+    .outlets tbody tr:hover { background: none; }
+    .outlets th, .outlets td { padding: 0; border: 0; }
+    .outlets tbody th, .outlets tfoot th { grid-column: 1 / -1; font-size: 17px; font-weight: 700; min-width: 0; }
+    .outlets .num { text-align: left; white-space: normal; font-size: 16px; }
+    .outlets td::before {
+      content: attr(data-label); display: block;
+      font-size: 12px; font-weight: 600; letter-spacing: .02em; color: var(--muted); margin-bottom: 1px;
+    }
+    .outlets tfoot tr { margin-top: 12px; padding: 14px; border: 0; border-radius: 12px; background: var(--surface-2); }
+    .outlets tfoot th, .outlets tfoot td { border: 0; }
+  }
+
+  /* ---------- About / details ---------- */
+  details.about { padding: 0; }
+  details.about summary {
+    min-height: 52px; padding: 14px 22px; cursor: pointer; font-weight: 700; list-style: none;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  details.about summary::-webkit-details-marker { display: none; }
+  details.about summary::after { content: "+"; font-size: 22px; font-weight: 400; color: var(--muted); line-height: 1; }
+  details.about[open] summary::after { content: "−"; }
+  .about-body { padding: 0 22px 20px; font-size: 14.5px; color: var(--ink-2); }
+  .about-body p + p, .about-body p + table, .about-body table + p { margin-top: 10px; }
+  table.map { border-collapse: collapse; width: 100%; max-width: 560px; font-size: 14px; }
+  table.map caption { text-align: left; font-weight: 700; color: var(--ink); padding-bottom: 6px; }
+  table.map th, table.map td { text-align: left; padding: 7px 10px 7px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.map td { overflow-wrap: anywhere; }
+  @media (max-width: 599px) { details.about summary { padding: 14px 16px; } .about-body { padding: 0 16px 16px; } }
+
+  /* ---------- Loading skeleton ---------- */
+  .skeleton {
+    display: block; border-radius: 6px; color: transparent !important;
+    background: linear-gradient(90deg, var(--surface-2) 0%, var(--line) 50%, var(--surface-2) 100%);
+    background-size: 200% 100%; animation: shimmer 1.3s ease-in-out infinite;
+  }
+  .sk-line { height: 14px; width: 60%; }
+  .sk-value { height: 30px; width: 75%; }
+
+  /* ---------- Footer ---------- */
+  .foot { padding-top: 6px; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 28px); font-size: 13px; color: var(--muted); text-align: center; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse { 50% { opacity: .35; } }
+  @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap mast-inner">
+    <div>
+      <p class="eyebrow">Partnership performance</p>
+      <h1>MEDIA PARTNERS</h1>
+    </div>
+    <div class="mast-actions">
+      <div class="status" id="status" data-mode="loading">
+        <span class="dot" aria-hidden="true"></span>
+        <span>
+          <span id="statusText">Loading…</span>
+          <span class="status-sub" id="statusSub">Auto-refreshes every 5 min</span>
+        </span>
+      </div>
+      <button type="button" class="btn btn-refresh" id="refreshBtn">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+        <span>Refresh</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap" id="main">
+  <div id="live" class="sr-only" aria-live="polite"></div>
+
+  <noscript>
+    <div class="panel state-panel"><h2>JavaScript is turned off</h2><p>This dashboard needs JavaScript to load data from Google Sheets.</p></div>
+  </noscript>
+
+  <!-- Refresh-failed banner (keeps showing the last good data underneath) -->
+  <div id="banner"></div>
+
+  <!-- Shown until CSV_URL is filled in -->
+  <section id="setupPanel" class="panel setup" aria-labelledby="setupTitle" hidden>
+    <span class="badge">Setup needed</span>
+    <h2 id="setupTitle">Connect your Google Sheet</h2>
+    <p>This dashboard isn't connected to a sheet yet, so there's no data to show. It reads the CSV link Google Sheets gives you when you publish a tab to the web.</p>
+    <ol class="steps">
+      <li>In your Google Sheet, open <b>File → Share → Publish to web</b>.</li>
+      <li>Pick the tab that holds your data, choose <b>Comma-separated values (.csv)</b>, click <b>Publish</b>, and copy the link.</li>
+      <li>Open this HTML file in a text editor, find <code>CSV_URL</code> near the top of the script, paste the link between the quotes, save, and reopen the page.</li>
+    </ol>
+    <h3>Expected sheet layout</h3>
+    <p>Row 1 holds the column names; each row below it is one media outlet. Numbers can include separators like <code>12,500</code>.</p>
+    <div class="scroll-x">
+      <table class="example">
+        <caption><span class="badge badge-example">Example only — not real data</span></caption>
+        <thead><tr><th>Media outlet</th><th>Amount spent</th><th>Times worked</th><th>Impressions</th><th>Engagement</th></tr></thead>
+        <tbody>
+          <tr><td>Example Outlet A</td><td>5000</td><td>2</td><td>120000</td><td>3500</td></tr>
+          <tr><td>Example Outlet B</td><td>1500</td><td>1</td><td>40000</td><td>900</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="privacy"><b>Privacy:</b> anyone who has the published link can read that tab, and the link is visible in this file. Don't put sensitive information (contracts, contacts, rates you must keep private) in the published tab.</p>
+  </section>
+
+  <!-- Shown when the first load fails -->
+  <section id="errorPanel" class="panel state-panel" role="alert" hidden>
+    <div class="state-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v5"/><path d="M12 16.5v.01"/><circle cx="12" cy="12" r="9.5"/></svg></div>
+    <h2 id="errorTitle">Couldn't load data</h2>
+    <p id="errorMsg"></p>
+    <p id="errorHint" class="hint" hidden></p>
+    <button type="button" class="btn" data-action="retry">Try again</button>
+  </section>
+
+  <div id="dashboard" hidden>
+    <section id="kpis" class="kpis" aria-label="Summary totals"></section>
+    <div id="notes"></div>
+
+    <section id="emptyPanel" class="panel state-panel" hidden>
+      <div class="state-icon neutral"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M9 9.5v10"/></svg></div>
+      <h2>No media outlets in the sheet yet</h2>
+      <p id="emptyMsg"></p>
+      <button type="button" class="btn" data-action="retry">Refresh</button>
+    </section>
+
+    <section id="chartPanel" class="panel" aria-labelledby="chartTitle">
+      <div class="panel-head">
+        <div>
+          <h2 id="chartTitle">Outlet comparison</h2>
+          <p class="panel-sub" id="chartSub"></p>
+        </div>
+        <div class="seg" id="chartSeg" role="group" aria-label="Metric to compare">
+          <button type="button" data-metric="impressions" aria-pressed="true">Impressions</button>
+          <button type="button" data-metric="engagement" aria-pressed="false">Engagement</button>
+          <button type="button" data-metric="spend" aria-pressed="false">Spend</button>
+          <button type="button" data-metric="timesWorked" aria-pressed="false">Times worked</button>
+        </div>
+      </div>
+      <div id="chart"></div>
+      <button type="button" class="btn btn-ghost chart-more" id="chartMore" hidden></button>
+    </section>
+
+    <section id="listPanel" class="panel" aria-labelledby="listTitle">
+      <div class="panel-head">
+        <div>
+          <h2 id="listTitle">All outlets</h2>
+          <p class="panel-sub" id="listCount"></p>
+        </div>
+      </div>
+      <div class="toolbar">
+        <label class="search">
+          <span class="sr-only">Search media outlets</span>
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+          <input id="search" type="search" placeholder="Search outlets" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
+        </label>
+        <div class="sort">
+          <label class="sort-label" for="sortKey">Sort by</label>
+          <select id="sortKey"></select>
+          <button type="button" class="btn" id="sortDir"></button>
+        </div>
+      </div>
+      <div id="list" class="table-wrap"></div>
+    </section>
+
+    <details class="panel about" id="about">
+      <summary>About this data</summary>
+      <div class="about-body" id="aboutBody"></div>
+    </details>
+  </div>
+</main>
+
+<footer class="wrap foot">MEDIA PARTNERS · Data from Google Sheets · Refreshes every 5 minutes</footer>
+
+<script>
+"use strict";
+
+/* ==================================================================
+   1) SETUP — paste your Google Sheets CSV link here
+   ================================================================== */
+
+/*  ▼▼▼  PASTE YOUR PUBLISHED CSV LINK BETWEEN THE QUOTES  ▼▼▼
+
+    Where to get it: Google Sheets → File → Share → Publish to web →
+    choose your data tab and "Comma-separated values (.csv)" → Publish → copy.
+
+    It looks like this (EXAMPLE ONLY — this exact link will not work):
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vEXAMPLE_ONLY/pub?gid=0&single=true&output=csv";
+*/
+const CSV_URL = "PASTE_YOUR_PUBLISHED_CSV_URL_HERE";
+
+/*  ▲▲▲  ------------------------------------------------  ▲▲▲  */
+
+// How often the dashboard reloads the sheet while it is open.
+const REFRESH_EVERY_MINUTES = 5;
+
+// Give up on a slow request after this many seconds and show an error.
+const FETCH_TIMEOUT_SECONDS = 20;
+
+// Number formatting (thousands separators etc.). "en-US" gives 12,345.67
+const NUMBER_LOCALE = "en-US";
+
+// Optional: text to show before spend totals, e.g. "SAR" or "$".
+// Leave "" to use the symbol your sheet already shows (if every row uses the same one).
+const SPEND_PREFIX = "";
+
+// If the same outlet appears on several rows, add its rows together (true) or list each row separately (false).
+const COMBINE_DUPLICATE_OUTLETS = true;
+
+// How many outlets the comparison chart shows before "Show all".
+const CHART_TOP_N = 10;
+
+// Rows whose outlet name is one of these are skipped, so a totals row isn't counted twice.
+const SKIP_ROWS_NAMED = ["total", "totals", "grand total", "subtotal", "sum"];
+
+
+/* ==================================================================
+   2) COLUMN MAPPING — which sheet columns feed which dashboard field
+   ------------------------------------------------------------------
+   Matching ignores capital letters, spaces, punctuation and anything
+   in brackets, so "Amount Spent (SAR)" matches "Amount spent".
+   If your sheet uses a different header, add it to the front of the
+   matching list. Exact matches win; earlier names win over later ones.
+   ================================================================== */
+const COLUMNS = {
+  outlet: {
+    label: "Media outlet",
+    aliases: ["Media outlet", "Media outlets", "Outlet", "Outlet name", "Media", "Media name", "Media partner",
+              "Partner", "Partner name", "Publication", "Publisher", "Channel", "Name"],
+  },
+  spend: {
+    label: "Amount spent",
+    aliases: ["Amount spent", "Amount spend", "Spend", "Spent", "Total spend", "Total spent", "Media spend",
+              "Amount paid", "Paid", "Amount", "Cost", "Total cost", "Budget spent", "Investment", "Fee", "Fees"],
+  },
+  timesWorked: {
+    label: "Times worked",
+    aliases: ["Times worked with that media outlet", "Times worked with media outlet", "Times worked with outlet",
+              "Times worked with", "Times worked", "Number of times worked", "No of times worked",
+              "Times collaborated", "Collaborations", "Number of collaborations", "Partnerships", "Times"],
+  },
+  impressions: {
+    label: "Impressions",
+    aliases: ["Impressions", "Total impressions", "Impression", "Impr", "Imps"],
+  },
+  engagement: {
+    label: "Engagement",
+    aliases: ["Engagement", "Engagements", "Total engagement", "Total engagements", "Interactions"],
+  },
+};
+
+
+/* ==================================================================
+   3) APP CODE — no changes needed below this line
+   ================================================================== */
+
+const CSV_URL_PLACEHOLDER = "PASTE_YOUR_PUBLISHED_CSV_URL_HERE";
+const NUMERIC_KEYS = ["spend", "timesWorked", "impressions", "engagement"];
+const ALL_KEYS = ["outlet", ...NUMERIC_KEYS];
+const REFRESH_MS = REFRESH_EVERY_MINUTES * 60 * 1000;
+const HEADER_SEARCH_ROWS = 10; // the header row may sit below a title row or two
+const SKIP_NAMES = new Set(SKIP_ROWS_NAMED.map((s) => s.toLowerCase()));
+
+const state = {
+  data: null,       // last successfully loaded dataset (kept if a later refresh fails)
+  loadedAt: null,   // Date of the last successful load
+  loading: false,
+  error: null,      // { title, message, hint }
+  query: "",
+  sortKey: "spend",
+  sortDir: "desc",
+  chartKey: "impressions",
+  chartShowAll: false,
+};
+
+const $ = (id) => document.getElementById(id);
+const els = {
+  status: $("status"), statusText: $("statusText"), refreshBtn: $("refreshBtn"), live: $("live"),
+  banner: $("banner"), setup: $("setupPanel"),
+  errorPanel: $("errorPanel"), errorTitle: $("errorTitle"), errorMsg: $("errorMsg"), errorHint: $("errorHint"),
+  dashboard: $("dashboard"), kpis: $("kpis"), notes: $("notes"), emptyPanel: $("emptyPanel"), emptyMsg: $("emptyMsg"),
+  chartPanel: $("chartPanel"), chartSub: $("chartSub"), chartSeg: $("chartSeg"), chart: $("chart"), chartMore: $("chartMore"),
+  listPanel: $("listPanel"), listCount: $("listCount"), search: $("search"), sortKey: $("sortKey"), sortDir: $("sortDir"),
+  list: $("list"), about: $("about"), aboutBody: $("aboutBody"),
+};
+
+class LoadError extends Error {
+  constructor(kind, detail = {}) { super(kind); this.kind = kind; this.detail = detail; }
+}
+
+/* ---------------- Small helpers ---------------- */
+
+function esc(value) {
+  return String(value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+const plural = (n, word, many = word + "s") => `${n} ${n === 1 ? word : many}`;
+const fmtFull = new Intl.NumberFormat(NUMBER_LOCALE, { maximumFractionDigits: 2 });
+const fmtCompact = new Intl.NumberFormat(NUMBER_LOCALE, { notation: "compact", maximumFractionDigits: 1 });
+const fmtClock = new Intl.DateTimeFormat(NUMBER_LOCALE, { hour: "numeric", minute: "2-digit" });
+
+function isConfigured() {
+  const url = CSV_URL.trim();
+  return url !== "" && url !== CSV_URL_PLACEHOLDER && !url.includes("EXAMPLE_ONLY");
+}
+
+function normalizeHeader(text) {
+  return String(text ?? "")
+    .replace(/\([^)]*\)|\[[^\]]*\]/g, " ")   // drop "(SAR)", "[total]" etc.
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^\p{L}\p{N}]+/gu, "");        // drop spaces & punctuation (keeps any language's letters)
+}
+
+function normalizeSearch(text) {
+  return String(text).toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ").trim();
+}
+
+function labelFor(key) {
+  const unit = state.data && state.data.units[key];
+  return COLUMNS[key].label + (unit ? ` (${unit})` : "");
+}
+
+function joinAffix(prefix, text, suffix) {
+  const pre = prefix ? prefix + (/[\p{L}.]$/u.test(prefix) ? " " : "") : "";
+  const suf = suffix ? (/^\p{L}/u.test(suffix) ? " " : "") + suffix : "";
+  return pre + text + suf;
+}
+
+// Format a number for display. Spend totals carry the sheet's own currency text (never an invented one).
+function fmtNumber(value, key, compact = false) {
+  const abs = Math.abs(value);
+  let text = compact && abs >= 10000 ? fmtCompact.format(abs) : fmtFull.format(abs);
+  const affix = key === "spend" && state.data ? state.data.spendAffix : null;
+  if (affix) text = joinAffix(affix.prefix, text, affix.suffix);
+  return (value < 0 ? "-" : "") + text;
+}
+
+function groupDigits(numText) {
+  const [whole, frac] = numText.split(".");
+  return whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",") + (frac !== undefined ? "." + frac : "");
+}
+
+function timeAgo(date) {
+  const mins = Math.floor((Date.now() - date.getTime()) / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.floor(mins / 60);
+  return `${hrs} hr${hrs === 1 ? "" : "s"} ago`;
+}
+
+function announce(text) {
+  els.live.textContent = "";
+  setTimeout(() => { els.live.textContent = text; }, 50);
+}
+
+/* ---------------- CSV parsing (RFC 4180: quotes, "" escapes, commas & line breaks inside quotes) ---------------- */
+
+function parseCSV(text) {
+  if (text.charCodeAt(0) === 0xfeff) text = text.slice(1); // strip byte-order mark
+  const rows = [];
+  let row = [], field = "", inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; }
+        else inQuotes = false;
+      } else field += c;
+    } else if (c === '"' && field === "") {
+      inQuotes = true;
+    } else if (c === ",") {
+      row.push(field); field = "";
+    } else if (c === "\n" || c === "\r") {
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      row.push(field); rows.push(row); row = []; field = "";
+    } else field += c;
+  }
+  if (field !== "" || row.length) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+/* ---------------- Number parsing ---------------- */
+
+const MISSING_TOKENS = new Set(["", "-", "--", "—", "–", "n/a", "na", "none", "null", "nil", "tbd", "tbc", "?"]);
+// optional prefix (e.g. "$", "SAR"), sign, number with optional , or space thousands separators, optional suffix
+const NUMBER_RE = /^([^\d.+\-−]*?)\s*([+\-−]?)\s*([^\d.+\-−]*?)\s*(\d{1,3}(?:[, ]\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+)\s*([^\d]*)$/;
+const AFFIX_RE = /^[\p{L}\p{Sc}~≈.%+ ]{0,6}$/u; // short currency/unit text only
+
+function parseNumber(input) {
+  const raw = String(input ?? "").replace(/[  ]/g, " ").trim();
+  if (MISSING_TOKENS.has(raw.toLowerCase()) || MISSING_TOKENS.has(raw.replace(/[\p{Sc}\s]/gu, ""))) {
+    return { status: "empty", value: null, raw };
+  }
+  const invalid = { status: "invalid", value: null, raw };
+  let s = raw
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))   // Arabic-Indic digits
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0))   // Persian digits
+    .replace(/٫/g, ".").replace(/٬/g, ",");
+  let negative = false;
+  if (/^\(.*\)$/.test(s)) { negative = true; s = s.slice(1, -1).trim(); } // accounting style (1,200)
+  const m = s.match(NUMBER_RE);
+  if (!m) return invalid;
+  const prefix = (m[1] + m[3]).trim();
+  let suffix = m[5].trim();
+  let multiplier = 1;
+  const short = suffix.match(/^([kmb])(?![a-z])\s*(.*)$/i);              // 12K, 1.5M, 2B
+  if (short) { multiplier = { k: 1e3, m: 1e6, b: 1e9 }[short[1].toLowerCase()]; suffix = short[2].trim(); }
+  if (!AFFIX_RE.test(prefix) || !AFFIX_RE.test(suffix)) return invalid;
+  const digits = m[4].replace(/[, ]/g, "");
+  let value = Number(digits) * multiplier;
+  if (!Number.isFinite(value)) return invalid;
+  if (negative || m[2] === "-" || m[2] === "−") value = -value;
+  const plain = !prefix && !suffix && multiplier === 1;
+  return {
+    status: "ok", value, raw, prefix, suffix,
+    display: plain ? (value < 0 ? "-" : "") + groupDigits(digits) : raw,   // as provided, just easier to read
+  };
+}
+
+/* ---------------- Column detection ---------------- */
+
+for (const def of Object.values(COLUMNS)) def.norm = def.aliases.map(normalizeHeader).filter(Boolean);
+
+function aliasScore(header, aliases) {
+  let best = 0;
+  aliases.forEach((alias, i) => {
+    if (header === alias) best = Math.max(best, 1000 - i);
+    else if (alias.length >= 6 && header.startsWith(alias)) best = Math.max(best, 500 + alias.length);
+    else if (alias.length >= 6 && header.includes(alias)) best = Math.max(best, 100 + alias.length);
+  });
+  return best;
+}
+
+function mapColumns(headerRow) {
+  const candidates = [];
+  headerRow.forEach((text, col) => {
+    const header = normalizeHeader(text);
+    if (!header) return;
+    for (const key of ALL_KEYS) {
+      const score = aliasScore(header, COLUMNS[key].norm);
+      if (score) candidates.push({ key, col, score });
+    }
+  });
+  candidates.sort((a, b) => b.score - a.score || a.col - b.col);
+  const mapping = {}, used = new Set();
+  for (const c of candidates) {
+    if (c.key in mapping || used.has(c.col)) continue;
+    mapping[c.key] = c.col;
+    used.add(c.col);
+  }
+  return mapping;
+}
+
+function findHeader(rows) {
+  let fallback = null;
+  for (let r = 0; r < Math.min(rows.length, HEADER_SEARCH_ROWS); r++) {
+    const mapping = mapColumns(rows[r]);
+    if (mapping.outlet === undefined) continue;
+    if (Object.keys(mapping).length >= 2) return { index: r, mapping };
+    if (!fallback) fallback = { index: r, mapping };
+  }
+  return fallback;
+}
+
+/* ---------------- Build the dataset from CSV rows ---------------- */
+
+const isBlankRow = (cells) => cells.every((c) => String(c).trim() === "");
+const cellAt = (cells, col) => (col === undefined ? "" : String(cells[col] ?? ""));
+
+function mergeFields(target, fields) {
+  for (const key of NUMERIC_KEYS) {
+    const parts = [target[key], fields[key]].filter((p) => p.status === "ok");
+    if (!parts.length) { if (fields[key].status === "invalid") target[key] = fields[key]; continue; }
+    target[key] = { status: "ok", merged: true, value: parts.reduce((sum, p) => sum + p.value, 0), raw: null };
+  }
+}
+
+function buildDataset(rows) {
+  if (!rows.some((r) => !isBlankRow(r))) throw new LoadError("emptyfile");
+  const header = findHeader(rows);
+  if (!header) throw new LoadError("noheader", { firstRow: rows.find((r) => !isBlankRow(r)) });
+  const { index: headerIndex, mapping } = header;
+  const headerRow = rows[headerIndex];
+
+  const headers = {}, units = {};
+  for (const [key, col] of Object.entries(mapping)) {
+    headers[key] = String(headerRow[col]).trim();
+    const unit = key !== "outlet" && headers[key].match(/\(([^)]+)\)\s*$/);
+    if (unit) units[key] = unit[1].trim();
+  }
+
+  const outlets = [], byName = new Map();
+  const invalidCounts = Object.fromEntries(NUMERIC_KEYS.map((k) => [k, 0]));
+  const spendAffixes = new Map();
+  let rowsRead = 0, skippedTotals = 0, unnamed = 0;
+
+  for (let r = headerIndex + 1; r < rows.length; r++) {
+    const cells = rows[r];
+    if (isBlankRow(cells)) continue;
+    let name = cellAt(cells, mapping.outlet).replace(/\s+/g, " ").trim();
+    const fields = {};
+    let anyNumber = false;
+    for (const key of NUMERIC_KEYS) {
+      fields[key] = mapping[key] === undefined
+        ? { status: "nocol", value: null, raw: "" }
+        : parseNumber(cellAt(cells, mapping[key]));
+      if (fields[key].status === "ok") anyNumber = true;
+    }
+    if (!name && !anyNumber) continue;                                    // e.g. a notes row
+    if (name && SKIP_NAMES.has(name.toLowerCase().replace(/[:\s]+$/, ""))) { skippedTotals++; continue; }
+
+    rowsRead++;
+    for (const key of NUMERIC_KEYS) if (fields[key].status === "invalid") invalidCounts[key]++;
+    const sp = fields.spend;
+    if (sp.status === "ok" && (sp.prefix || sp.suffix)) spendAffixes.set(sp.prefix + "\u0000" + sp.suffix, { prefix: sp.prefix, suffix: sp.suffix });
+    if (!name) { unnamed++; name = `(No outlet name, row ${r + 1})`; }
+
+    const key = name.toLowerCase();
+    const existing = byName.get(key);
+    if (existing && COMBINE_DUPLICATE_OUTLETS) {
+      mergeFields(existing.fields, fields);
+      existing.rowCount++;
+      continue;
+    }
+    const outlet = { name, rowCount: 1, fields };
+    outlets.push(outlet);
+    if (!existing) byName.set(key, outlet);
+  }
+
+  // Currency text for spend totals: your setting, or the one symbol every spend cell shares.
+  let spendAffix = null;
+  if (SPEND_PREFIX.trim()) spendAffix = { prefix: SPEND_PREFIX.trim(), suffix: "" };
+  else if (spendAffixes.size === 1) spendAffix = [...spendAffixes.values()][0];
+
+  // Plain-language notes about anything unusual in the sheet.
+  const notices = [];
+  const missingCols = NUMERIC_KEYS.filter((k) => mapping[k] === undefined);
+  if (missingCols.length) {
+    notices.push(`No column found for ${missingCols.map((k) => `“${COLUMNS[k].label}”`).join(", ")}, so it shows as “—”. Rename the column in the sheet, or add your header name to COLUMNS in the code.`);
+  }
+  for (const key of NUMERIC_KEYS) {
+    const n = invalidCounts[key];
+    if (n) notices.push(`${plural(n, `${COLUMNS[key].label} value`)} couldn't be read as a number and ${n === 1 ? "is" : "are"} left out of the totals (underlined in the list).`);
+  }
+  if (spendAffixes.size > 1 && !SPEND_PREFIX.trim()) {
+    const kinds = [...spendAffixes.values()].map((a) => `“${a.prefix || a.suffix}”`).slice(0, 4).join(", ");
+    notices.push(`Amount spent uses more than one currency label (${kinds}). Totals add the numbers as they are, without converting currencies.`);
+  }
+  const combined = outlets.filter((o) => o.rowCount > 1).length;
+  if (combined) notices.push(`${plural(combined, "outlet")} appear${combined === 1 ? "s" : ""} on more than one row; ${combined === 1 ? "its rows were" : "their rows were"} added together.`);
+  if (skippedTotals) notices.push(`Skipped ${plural(skippedTotals, "row")} named “Total” so ${skippedTotals === 1 ? "it isn't" : "they aren't"} counted twice.`);
+  if (unnamed) notices.push(`${plural(unnamed, "row")} had figures but no outlet name; shown as “(No outlet name)”.`);
+
+  return { outlets, mapping, headers, units, spendAffix, notices, rowsRead, uniqueOutlets: byName.size, headerRowNumber: headerIndex + 1 };
+}
+
+function sumFields(outlets) {
+  const total = {}, missing = {};
+  for (const key of NUMERIC_KEYS) { total[key] = 0; missing[key] = 0; }
+  for (const o of outlets) {
+    for (const key of NUMERIC_KEYS) {
+      const f = o.fields[key];
+      if (f.status === "ok") total[key] += f.value; else missing[key]++;
+    }
+  }
+  return { total, missing };
+}
+
+/* ---------------- Loading ---------------- */
+
+// Accept common link mix-ups: a published "web page" link is switched to its CSV version.
+function resolveCsvUrl(input) {
+  let url = input.trim().split("#")[0];
+  if (!/^https?:\/\//i.test(url)) throw new LoadError("badurl");
+  if (/docs\.google\.com\/spreadsheets\/d\/e\//i.test(url)) {
+    url = url.replace(/\/pubhtml(?=[?]|$)/, "/pub");
+    if (/[?&]output=/.test(url)) url = url.replace(/([?&]output=)[^&]*/, "$1csv");
+    else url += (url.includes("?") ? "&" : "?") + "output=csv";
+  } else if (/docs\.google\.com\/spreadsheets\/d\/[^/]+\/(edit|view|htmlview|copy)?/i.test(url) && !/\/(export|gviz)\b/i.test(url)) {
+    throw new LoadError("editlink");
+  }
+  return url;
+}
+
+let refreshTimer = 0;
+let lastAttemptAt = 0;
+
+async function loadData({ manual = false } = {}) {
+  if (state.loading || !isConfigured()) return;
+  state.loading = true;
+  lastAttemptAt = Date.now();
+  render();
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_SECONDS * 1000);
+  try {
+    const url = resolveCsvUrl(CSV_URL);
+    let res;
+    try {
+      res = await fetch(url, { cache: "no-store", signal: controller.signal });
+    } catch (err) {
+      throw new LoadError(err && err.name === "AbortError" ? "timeout" : "network");
+    }
+    if (!res.ok) throw new LoadError("http", { status: res.status });
+    const text = await res.text();
+    const type = (res.headers.get("content-type") || "").toLowerCase();
+    if (type.includes("text/html") || /^\s*<(!doctype|html)/i.test(text.slice(0, 300))) throw new LoadError("html");
+
+    state.data = buildDataset(parseCSV(text));
+    state.loadedAt = new Date();
+    state.error = null;
+    if (manual) announce(`Data updated: ${plural(state.data.uniqueOutlets, "media outlet")}.`);
+  } catch (err) {
+    console.error("[MEDIA PARTNERS] Could not load the sheet:", err);
+    state.error = describeError(err);
+    announce(state.error.title);
+  } finally {
+    clearTimeout(timeout);
+    state.loading = false;
+    render();
+    scheduleNextRefresh();
+  }
+}
+
+function scheduleNextRefresh() {
+  clearTimeout(refreshTimer);
+  if (!isConfigured()) return;
+  // Skipped while the tab is hidden; the visibility handler catches up when you come back.
+  refreshTimer = setTimeout(() => { if (!document.hidden) loadData(); }, REFRESH_MS);
+}
+
+function describeError(err) {
+  const kind = err instanceof LoadError ? err.kind : (err && err.name === "AbortError" ? "timeout" : "unknown");
+  const localHint = location.protocol === "file:"
+    ? "This page was opened as a file on your device. Some browsers (and iPhone's Files app) block it from fetching data. If this keeps happening, host the file at a web address (for example GitHub Pages or Netlify) and open it from there."
+    : "";
+  const publishSteps = "In Google Sheets use File → Share → Publish to web, pick your tab and “Comma-separated values (.csv)”, then paste that link into CSV_URL.";
+  switch (kind) {
+    case "badurl":
+      return { title: "The CSV link in the code isn't a web address", message: `CSV_URL should start with https://. ${publishSteps}` };
+    case "editlink":
+      return { title: "That's the sheet's editing link, not its CSV link", message: `The address from your browser bar or the Share button won't work here. ${publishSteps}` };
+    case "timeout":
+      return { title: "The Google Sheet took too long to respond", message: "Check your internet connection, then press Refresh.", hint: localHint };
+    case "network":
+      return { title: "Couldn't reach the Google Sheet", message: "Check your internet connection and that the sheet is still published to the web as CSV.", hint: localHint };
+    case "http": {
+      const status = err.detail.status;
+      if (status === 401 || status === 403) return { title: "The sheet isn't publicly readable", message: `Google refused access (error ${status}). Re-publish it: ${publishSteps} Work or school accounts may have publishing turned off by an administrator.` };
+      if (status === 400 || status === 404 || status === 410) return { title: "The sheet link wasn't found", message: `The link returned error ${status}. It may be mistyped, or the sheet was unpublished or deleted. ${publishSteps}` };
+      return { title: `Google Sheets returned an error (${status})`, message: "This is usually temporary. Wait a moment and press Refresh." };
+    }
+    case "html":
+      return { title: "Got a web page instead of CSV data", message: `The link opened a Google page (often a sign-in page) rather than the sheet's data. ${publishSteps}` };
+    case "emptyfile":
+      return { title: "The published sheet is empty", message: "Add a header row (Media outlet, Amount spent, Times worked, Impressions, Engagement) and your outlets, then press Refresh." };
+    case "noheader": {
+      const found = (err.detail.firstRow || []).map((c) => String(c).trim()).filter(Boolean).slice(0, 8);
+      return {
+        title: "Couldn't find the column headers",
+        message: "Expected a header row with a column like “Media outlet”, plus Amount spent, Times worked, Impressions and Engagement. Rename your headers, or add your names to COLUMNS in the code.",
+        hint: found.length ? `First row found: ${found.join(" | ")}` : "",
+      };
+    }
+    default:
+      return { title: "Something went wrong while loading", message: "Press Refresh to try again. If it keeps happening, check that the sheet is published as CSV.", hint: err && err.message ? `Details: ${err.message}` : "" };
+  }
+}
+
+/* ---------------- Rendering ---------------- */
+
+function render() {
+  const configured = isConfigured();
+  const fatal = configured && !state.data && state.error && !state.loading;
+  els.setup.hidden = configured;
+  els.errorPanel.hidden = !fatal;
+  els.dashboard.hidden = !configured || fatal;
+
+  if (fatal) {
+    els.errorTitle.textContent = state.error.title;
+    els.errorMsg.textContent = state.error.message;
+    els.errorHint.textContent = state.error.hint || "";
+    els.errorHint.hidden = !state.error.hint;
+  }
+  if (configured && !fatal) {
+    if (state.data) renderDashboard(); else renderSkeleton();
+  }
+  renderBanner();
+  renderStatus();
+  els.refreshBtn.disabled = state.loading;
+  els.refreshBtn.setAttribute("aria-busy", String(state.loading));
+}
+
+function renderStatus() {
+  let mode, text, sub = `Auto-refreshes every ${REFRESH_EVERY_MINUTES} min`;
+  if (!isConfigured()) { mode = "idle"; text = "Not connected to a sheet yet"; sub = "Add your CSV link to start"; }
+  else if (state.loading) { mode = "loading"; text = state.data ? "Refreshing…" : "Loading data…"; }
+  else if (state.error && state.data) { mode = "warn"; text = `Refresh failed · data from ${fmtClock.format(state.loadedAt)}`; }
+  else if (state.error) { mode = "error"; text = "Couldn't load data"; }
+  else if (state.loadedAt) { mode = "ok"; text = `Updated ${fmtClock.format(state.loadedAt)} · ${timeAgo(state.loadedAt)}`; }
+  else { mode = "loading"; text = "Loading data…"; }
+  els.status.dataset.mode = mode;
+  els.statusText.textContent = text;
+  $("statusSub").textContent = sub;
+}
+
+function renderBanner() {
+  if (!(state.data && state.error && !state.loading)) { els.banner.innerHTML = ""; return; }
+  const e = state.error;
+  els.banner.innerHTML = `
+    <div class="notice notice-warn" role="alert">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4"/><path d="M12 16.5v.01"/><path d="M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+      <div class="notice-body">
+        <p class="notice-title">Couldn't refresh — showing data from ${esc(fmtClock.format(state.loadedAt))}</p>
+        <p>${esc(e.title)}. ${esc(e.message)}</p>
+        ${e.hint ? `<p class="hint">${esc(e.hint)}</p>` : ""}
+      </div>
+      <button type="button" class="btn" data-action="retry">Try again</button>
+    </div>`;
+}
+
+function renderSkeleton() {
+  els.kpis.innerHTML = Array.from({ length: 5 }, () =>
+    `<div class="kpi" aria-hidden="true"><span class="skeleton sk-line"></span><span class="skeleton sk-value"></span><span class="skeleton sk-line" style="width:45%"></span></div>`).join("");
+  els.notes.innerHTML = "";
+  els.kpis.hidden = false;
+  els.emptyPanel.hidden = true;
+  els.chartPanel.hidden = false;
+  els.listPanel.hidden = false;
+  els.about.hidden = true;
+  els.chartSub.textContent = "Loading…";
+  els.chartMore.hidden = true;
+  els.chart.innerHTML = `<div aria-hidden="true">${[92, 74, 58, 41, 27].map((w) =>
+    `<span class="skeleton" style="height:14px;width:${w}%;margin:16px 0"></span>`).join("")}</div>`;
+  els.listCount.textContent = "Loading data from Google Sheets…";
+  els.list.innerHTML = "";
+}
+
+function renderDashboard() {
+  const d = state.data;
+  const empty = d.outlets.length === 0;
+  els.emptyPanel.hidden = !empty;
+  els.kpis.hidden = empty;
+  els.chartPanel.hidden = empty;
+  els.listPanel.hidden = empty;
+  els.about.hidden = false;
+  if (empty) {
+    els.emptyMsg.textContent = `The column headers were found (row ${d.headerRowNumber}), but there are no outlet rows under them yet. Add your first media outlet on the next row, then press Refresh.`;
+  }
+  renderKpis();
+  renderNotes();
+  if (!empty) { renderChart(); renderList(); }
+  renderAbout();
+}
+
+function renderKpis() {
+  const d = state.data;
+  const { total, missing } = sumFields(d.outlets);
+  const card = (label, value, sub, extra = "") =>
+    `<article class="kpi ${extra}"><p class="kpi-label">${esc(label)}</p><p class="kpi-value">${esc(value)}</p><p class="kpi-sub">${esc(sub)}</p></article>`;
+  const metric = (label, key, note) => {
+    if (d.mapping[key] === undefined) return card(label, "—", "Column not found in sheet", "is-missing");
+    const v = total[key];
+    const big = Math.abs(v) >= 1e6;
+    const parts = [big ? fmtNumber(v, key) : note];
+    if (missing[key] && d.outlets.length) parts.push(`${missing[key]} without a value`);
+    return card(label, fmtNumber(v, key, big), parts.join(" · "));
+  };
+  const unit = (key) => (d.units[key] ? ` (${d.units[key]})` : "");
+  els.kpis.innerHTML = [
+    metric("Total spend" + (d.spendAffix ? "" : unit("spend")), "spend", "Sum of amount spent"),
+    metric("Total impressions" + unit("impressions"), "impressions", "Sum of impressions"),
+    metric("Total engagement" + unit("engagement"), "engagement", "Sum of engagement, as recorded"),
+    card("Media outlets", fmtFull.format(d.uniqueOutlets), "Unique outlet names"),
+    metric("Total collaborations", "timesWorked", "Sum of times worked"),
+  ].join("");
+}
+
+function renderNotes() {
+  const notes = state.data.notices;
+  els.notes.innerHTML = !notes.length ? "" : `
+    <div class="notice notice-info" role="note">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v5.5"/><path d="M12 7.5v.01"/></svg>
+      <div class="notice-body">
+        <p class="notice-title">Notes about the sheet data</p>
+        <ul>${notes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>
+      </div>
+    </div>`;
+}
+
+function renderChart() {
+  const d = state.data;
+  const key = state.chartKey;
+  const name = COLUMNS[key].label.toLowerCase();
+  for (const b of els.chartSeg.querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.metric === key));
+  els.chartMore.hidden = true;
+
+  if (d.mapping[key] === undefined) {
+    els.chartSub.textContent = "";
+    els.chart.innerHTML = `<p class="fallback">The sheet has no “${esc(COLUMNS[key].label)}” column, so there's nothing to compare for it.</p>`;
+    return;
+  }
+  const ranked = d.outlets
+    .filter((o) => o.fields[key].status === "ok")
+    .sort((a, b) => b.fields[key].value - a.fields[key].value || a.name.localeCompare(b.name));
+  const max = ranked.reduce((m, o) => Math.max(m, o.fields[key].value), 0);
+  if (!ranked.length || max <= 0) {
+    els.chartSub.textContent = "";
+    els.chart.innerHTML = `<p class="fallback">No ${esc(name)} figures to compare yet. Add numbers to the “${esc(d.headers[key])}” column and press Refresh.</p>`;
+    return;
+  }
+  const showAll = state.chartShowAll || ranked.length <= CHART_TOP_N;
+  const shown = showAll ? ranked : ranked.slice(0, CHART_TOP_N);
+  const without = d.outlets.length - ranked.length;
+  els.chartSub.textContent = (showAll
+    ? `${ranked.length === 1 ? "1 outlet" : `All ${ranked.length} outlets`} ranked by ${name}`
+    : `Top ${shown.length} of ${ranked.length} outlets by ${name}`) + (without ? ` · ${without} without a value not shown` : "");
+
+  els.chart.innerHTML = `<ol class="bars" aria-label="Outlets ranked by ${esc(name)}">${shown.map((o) => {
+    const v = o.fields[key].value;
+    const pct = v > 0 ? Math.max(1, (v / max) * 100) : 0;
+    const full = fmtNumber(v, key);
+    return `<li class="bar-row" title="${esc(o.name)}: ${esc(full)}">
+      <span class="bar-name">${esc(o.name)}</span>
+      <span class="bar-track" aria-hidden="true"><span class="bar-fill" style="width:${pct.toFixed(2)}%"></span></span>
+      <span class="bar-val">${esc(fmtNumber(v, key, true))}</span>
+    </li>`;
+  }).join("")}</ol>`;
+
+  if (ranked.length > CHART_TOP_N) {
+    els.chartMore.hidden = false;
+    els.chartMore.textContent = state.chartShowAll ? `Show top ${CHART_TOP_N} only` : `Show all ${ranked.length} outlets`;
+  }
+}
+
+function compareOutlets(a, b) {
+  const { sortKey: key, sortDir } = state;
+  const dir = sortDir === "asc" ? 1 : -1;
+  const byName = (x, y) => x.name.localeCompare(y.name, NUMBER_LOCALE, { sensitivity: "base", numeric: true });
+  if (key === "outlet") return dir * byName(a, b);
+  const va = a.fields[key].value, vb = b.fields[key].value;
+  if (va === null && vb === null) return byName(a, b);
+  if (va === null) return 1;                 // missing values always go last
+  if (vb === null) return -1;
+  return dir * (va - vb) || byName(a, b);
+}
+
+function cellHtml(field, key) {
+  if (field.status === "ok") {
+    const text = field.merged ? fmtNumber(field.value, key) : field.display;
+    return `<span>${esc(text)}</span>`;
+  }
+  if (field.status === "invalid") {
+    return `<span class="v-invalid" title="Not a number — left out of totals">${esc(field.raw)}</span><span class="sr-only"> (not a number, left out of totals)</span>`;
+  }
+  const why = field.status === "nocol" ? "column not in sheet" : "no value";
+  return `<span class="v-missing" aria-hidden="true" title="${why}">—</span><span class="sr-only">${why}</span>`;
+}
+
+function renderList() {
+  const d = state.data;
+  const q = normalizeSearch(state.query);
+  const shown = d.outlets.filter((o) => !q || normalizeSearch(o.name).includes(q)).sort(compareOutlets);
+  const focusedSort = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.sort : null;
+
+  els.listCount.textContent = q
+    ? `Showing ${shown.length} of ${plural(d.outlets.length, "outlet")}`
+    : plural(d.outlets.length, "outlet");
+  els.sortKey.value = state.sortKey;
+  const numeric = state.sortKey !== "outlet";
+  const dirText = numeric ? (state.sortDir === "desc" ? "High → Low" : "Low → High") : (state.sortDir === "asc" ? "A → Z" : "Z → A");
+  els.sortDir.textContent = dirText;
+  els.sortDir.setAttribute("aria-label", `Sort order: ${dirText.replace("→", "to")}. Activate to reverse.`);
+
+  if (!shown.length) {
+    els.list.innerHTML = `<div class="list-empty"><p>No outlets match “${esc(state.query.trim())}”.</p><button type="button" class="btn" data-action="clear-search">Clear search</button></div>`;
+    return;
+  }
+
+  const head = ALL_KEYS.map((key) => {
+    const active = state.sortKey === key;
+    const aria = active ? (state.sortDir === "asc" ? "ascending" : "descending") : "none";
+    const arrow = active ? (state.sortDir === "asc" ? "▲" : "▼") : "↕";
+    return `<th scope="col" class="${key === "outlet" ? "" : "num"}" aria-sort="${aria}">
+      <button type="button" class="th-btn" data-sort="${key}">${esc(labelFor(key))}<span class="sort-ind" aria-hidden="true">${arrow}</span></button></th>`;
+  }).join("");
+
+  const body = shown.map((o) => `<tr>
+      <th scope="row">${esc(o.name)}${o.rowCount > 1 ? `<span class="pill">${o.rowCount} rows</span>` : ""}</th>
+      ${NUMERIC_KEYS.map((key) => `<td class="num" data-label="${esc(labelFor(key))}">${cellHtml(o.fields[key], key)}</td>`).join("")}
+    </tr>`).join("");
+
+  let foot = "";
+  if (q) {
+    const { total } = sumFields(shown);
+    foot = `<tfoot><tr><th scope="row">Total of ${plural(shown.length, "outlet")} shown</th>${NUMERIC_KEYS.map((key) =>
+      `<td class="num" data-label="${esc(labelFor(key))}">${d.mapping[key] === undefined ? "—" : esc(fmtNumber(total[key], key))}</td>`).join("")}</tr></tfoot>`;
+  }
+
+  els.list.innerHTML = `<table class="outlets"><caption class="sr-only">Media outlets — select a column heading to sort</caption>
+    <thead><tr>${head}</tr></thead><tbody>${body}</tbody>${foot}</table>`;
+
+  if (focusedSort) { const btn = els.list.querySelector(`[data-sort="${focusedSort}"]`); if (btn) btn.focus(); }
+}
+
+function renderAbout() {
+  const d = state.data;
+  const rows = ALL_KEYS.map((key) => `<tr><th scope="row">${esc(COLUMNS[key].label)}</th><td>${
+    d.mapping[key] !== undefined ? `“${esc(d.headers[key])}”` : `<span class="v-missing">Not found</span>`}</td></tr>`).join("");
+  els.aboutBody.innerHTML = `
+    <p>Figures come from a Google Sheet published as CSV. This page loads it when opened, every ${REFRESH_EVERY_MINUTES} minutes while open, and whenever you press Refresh. “Updated” is when this page last loaded the sheet; Google can take a few minutes to publish new edits.</p>
+    <p>Totals add up the numbers in each column. Values are shown as they appear in the sheet: no currency is assumed, and engagement is summed as recorded, not converted into a rate.</p>
+    <table class="map"><caption>Columns used (header row ${d.headerRowNumber})</caption>
+      <thead><tr><th scope="col">Dashboard field</th><th scope="col">Sheet column</th></tr></thead><tbody>${rows}</tbody></table>
+    <p>${plural(d.rowsRead, "data row")} read.</p>`;
+}
+
+/* ---------------- Events & start-up ---------------- */
+
+function setSort(key, toggle) {
+  if (toggle && key === state.sortKey) state.sortDir = state.sortDir === "asc" ? "desc" : "asc";
+  else { state.sortKey = key; state.sortDir = key === "outlet" ? "asc" : "desc"; }
+  renderList();
+}
+
+function init() {
+  els.sortKey.innerHTML = ALL_KEYS.map((key) => `<option value="${key}">${esc(COLUMNS[key].label)}</option>`).join("");
+
+  els.refreshBtn.addEventListener("click", () => { if (isConfigured()) loadData({ manual: true }); else els.setup.scrollIntoView({ behavior: "smooth" }); });
+  els.search.addEventListener("input", () => { state.query = els.search.value; if (state.data) renderList(); });
+  els.search.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && els.search.value) { els.search.value = ""; state.query = ""; renderList(); }
+    if (e.key === "Enter") els.search.blur(); // hides the iPhone keyboard
+  });
+  els.sortKey.addEventListener("change", () => setSort(els.sortKey.value, false));
+  els.sortDir.addEventListener("click", () => { state.sortDir = state.sortDir === "asc" ? "desc" : "asc"; renderList(); });
+  els.list.addEventListener("click", (e) => {
+    const sortBtn = e.target.closest("[data-sort]");
+    if (sortBtn) setSort(sortBtn.dataset.sort, true);
+    if (e.target.closest('[data-action="clear-search"]')) { els.search.value = ""; state.query = ""; renderList(); els.search.focus(); }
+  });
+  els.chartSeg.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-metric]");
+    if (!b || !state.data) return;
+    state.chartKey = b.dataset.metric;
+    state.chartShowAll = false;
+    renderChart();
+  });
+  els.chartMore.addEventListener("click", () => { state.chartShowAll = !state.chartShowAll; renderChart(); });
+  document.addEventListener("click", (e) => { if (e.target.closest('[data-action="retry"]')) loadData({ manual: true }); });
+
+  // Phones pause background tabs: refresh on return if the data is due.
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) return;
+    if (isConfigured() && Date.now() - lastAttemptAt >= REFRESH_MS) loadData(); else renderStatus();
+  });
+  window.addEventListener("online", () => { if (state.error) loadData(); });
+  setInterval(renderStatus, 30 * 1000); // keeps "x min ago" current
+
+  render();
+  loadData();
+}
+
+init();
+</script>
+</body>
+</html>
